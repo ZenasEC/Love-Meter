@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Love Meter — An Almanac of Small Affections</title>
+<meta name="description" content="Write two names and read an honest little number. A big beating heart keeps the score, a letter press writes it down, and a music box plays." />
+<meta property="og:title" content="Love Meter" />
+<meta property="og:description" content="Write two names and read an honest little number." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#f8f1ea" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Instrument+Sans:ital,wght@0,400..600;1,400..600&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f8f1ea'/%3E%3Cpath d='M16 25C8 19 6 15 6 12.2 6 9.4 8 7.5 10.4 7.5c1.6 0 2.9.8 3.9 2.2.4.6.9.6 1.4-.1 1-1.3 2.3-2.1 3.9-2.1C22 7.5 24 9.4 24 12.2 24 15 22 19 16 25z' fill='%23c8395c'/%3E%3C/svg%3E" />
+</head>
+<body class="is-locked">
+
+<a class="skip" href="#meter">Skip to the meter</a>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="drift" aria-hidden="true"></canvas>
+
+<!-- the heart gradient, defined once and shared by both hearts -->
+<svg class="svgdefs" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="heartFill" cx="36%" cy="27%" r="84%">
+      <stop offset="0%"   stop-color="#f28fa5" />
+      <stop offset="42%"  stop-color="#c8395c" />
+      <stop offset="100%" stop-color="#8a2240" />
+    </radialGradient>
+
+    <!-- a single full heart outline, reused by the pulse-ring echoes -->
+    <path id="heartShape"
+          d="M50 20 C47 12 40 6 30 6 C16 6 4 16 4 32 C4 50 20 68 50 92 C80 68 96 50 96 32 C96 16 84 6 70 6 C60 6 53 12 50 20 Z" />
+
+    <!-- the same outline again, as a clip path for the light sweep -->
+    <clipPath id="heartClip">
+      <path d="M50 20 C47 12 40 6 30 6 C16 6 4 16 4 32 C4 50 20 68 50 92 C80 68 96 50 96 32 C96 16 84 6 70 6 C60 6 53 12 50 20 Z" />
+    </clipPath>
+
+    <!-- the glint that travels across the heart -->
+    <linearGradient id="sheenGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0" />
+      <stop offset="46%"  stop-color="#ffffff" stop-opacity="0" />
+      <stop offset="55%"  stop-color="#ffffff" stop-opacity="0.42" />
+      <stop offset="64%"  stop-color="#ffffff" stop-opacity="0" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- a little cupid, drawn once as single-colour line art. The two that
+         flank the heart are this same shape, mirrored, so they aim inwards. -->
+    <g id="cupid" transform="translate(5 3)"
+       fill="none" stroke="currentColor" stroke-width="1.7"
+       stroke-linecap="round" stroke-linejoin="round">
+      <!-- halo -->
+      <ellipse cx="41" cy="18" rx="9.5" ry="2.6" />
+      <!-- head, hair sweep and eye -->
+      <circle cx="41" cy="33" r="10" />
+      <path d="M32 26 Q36 17 46 20" />
+      <circle cx="45.5" cy="32" r="1.3" fill="currentColor" stroke="none" />
+      <!-- neck + torso -->
+      <path d="M41 43 L41 48" />
+      <path d="M33 48 Q28 68 41 73 Q54 68 49 48 Z" />
+      <!-- one arm draws the bow, one steadies the string -->
+      <path d="M47 54 Q58 52 67 57" />
+      <path d="M35 54 Q43 61 53 59" />
+      <!-- legs and feet -->
+      <path d="M38 73 L34 88" />
+      <path d="M44 73 L48 88" />
+      <path d="M34 88 L29 90" />
+      <path d="M48 88 L53 90" />
+      <!-- wings -->
+      <path d="M34 50 C23 36 7 40 10 52 C3 56 10 66 28 60 Z" />
+      <path d="M32 57 C23 52 14 56 18 64 C13 68 21 73 32 65 Z" />
+      <!-- bow and drawn string -->
+      <path d="M68 38 Q82 56 68 74" />
+      <path d="M68 38 L56 56 L68 74" />
+      <!-- arrow, fletching, and a heart for its head -->
+      <path d="M52 56 L96 56" />
+      <path d="M52 56 L45 51" />
+      <path d="M52 56 L45 61" />
+      <path d="M12 20.5C5.6 15.6 3.8 12.3 3.8 9.9c0-2.3 1.7-3.9 3.7-3.9 1.4 0 2.5.7 3.3 1.9.3.5.8.5 1.1 0 .8-1.2 1.9-1.9 3.3-1.9 2 0 3.7 1.6 3.7 3.9 0 2.4-1.8 5.7-8.2 10.6z"
+            transform="translate(95.2 49.8) scale(.4)" fill="currentColor" stroke="none" />
+    </g>
+  </defs>
+</svg>
+
+<!-- ================= COVER (unlocks audio) ================= -->
+<div class="cover" id="cover">
+  <div class="cover__inner">
+    <div class="cover__hearts">
+      <span class="cupid cupid--l" aria-hidden="true"><svg viewBox="0 0 120 120"><use href="#cupid" /></svg></span>
+      <div class="cover__heart" data-cover-heart aria-hidden="true"></div>
+      <span class="cupid cupid--r" aria-hidden="true"><svg viewBox="0 0 120 120"><use href="#cupid" /></svg></span>
+    </div>
+    <p class="cover__eyebrow">An almanac of small affections</p>
+    <h1 class="cover__title">Love<br /><em>Meter</em></h1>
+    <p class="cover__sub">Two names in, one honest number out &mdash;<br />and a heart that tells you how it feels about it.</p>
+    <button class="btn btn--ink" id="enterBtn" type="button">Open with music</button>
+    <button class="cover__skip" id="skipBtn" type="button">open in silence</button>
+    <p class="cover__fine">Sound begins only after you press play. Nothing here leaves your device.</p>
+  </div>
+</div>
+
+<!-- ================= MASTHEAD ================= -->
+<header class="masthead" id="top">
+  <div class="wrap masthead__inner">
+    <a class="mark" href="#top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5C5.6 15.6 3.8 12.3 3.8 9.9c0-2.3 1.7-3.9 3.7-3.9 1.4 0 2.5.7 3.3 1.9.3.5.8.5 1.1 0 .8-1.2 1.9-1.9 3.3-1.9 2 0 3.7 1.6 3.7 3.9 0 2.4-1.8 5.7-8.2 10.6z" fill="currentColor"/></svg>
+      <span>Love&nbsp;Meter</span>
+    </a>
+
+    <nav class="nav" aria-label="Sections">
+      <a href="#meter">The meter</a>
+      <a href="#days">The days</a>
+      <a href="#letter">The letter</a>
+      <a href="#prints">The prints</a>
+      <a href="#keepsakes">Keepsakes</a>
+    </nav>
+
+    <div class="sound">
+      <button class="sound__btn" id="soundBtn" type="button" aria-pressed="false">waltz &mdash; off</button>
+      <div class="sound__vol" id="soundVol" hidden>
+        <label class="sr" for="volume">Volume</label>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.55" />
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= 01 THE METER ================= -->
+  <section class="stage wrap" id="meter">
+    <p class="eyebrow">01 &mdash; the meter</p>
+    <h2 class="stage__title">Write two names.<br /><em>Read the heart.</em></h2>
+
+    <div class="heartwrap">
+      <span class="cupid cupid--l" aria-hidden="true"><svg viewBox="0 0 120 120"><use href="#cupid" /></svg></span>
+
+      <div class="heart" id="heart">
+        <span class="heart__halo" aria-hidden="true"></span>
+        <span class="heart__glow" aria-hidden="true"></span>
+        <svg class="heart__svg" viewBox="0 0 100 100" aria-hidden="true">
+          <!-- pulse rings: scaled + faded from JS so they land exactly on each thump -->
+          <g class="heart__echo heart__echo--a"><use href="#heartShape" /></g>
+          <g class="heart__echo heart__echo--b"><use href="#heartShape" /></g>
+
+          <g class="heart__halves">
+            <path class="heart__half heart__half--l"
+                  d="M50 20 C47 12 40 6 30 6 C16 6 4 16 4 32 C4 50 20 68 50 92 L50.7 20 Z" />
+            <path class="heart__half heart__half--r"
+                  d="M50 20 C53 12 60 6 70 6 C84 6 96 16 96 32 C96 50 80 68 50 92 L49.3 20 Z" />
+          </g>
+
+          <!-- a slow specular sweep across the surface -->
+          <g class="heart__sheenwrap" clip-path="url(#heartClip)">
+            <rect class="heart__sheen" x="-80" y="-20" width="260" height="140" fill="url(#sheenGrad)" />
+          </g>
+
+          <g class="heart__shards">
+            <path class="shard shard--1" d="M30 34 l7 -5 3 8 -7 3 z" />
+            <path class="shard shard--2" d="M42 46 l6 -3 2 7 -6 3 z" />
+            <path class="shard shard--3" d="M36 60 l6 -2 1 6 -6 2 z" />
+          </g>
+        </svg>
+        <p class="heart__value"><span id="scoreNum" class="tnum">0</span><i>%</i></p>
+      </div>
+
+      <span class="cupid cupid--r" aria-hidden="true"><svg viewBox="0 0 120 120"><use href="#cupid" /></svg></span>
+    </div>
+
+    <p class="heart__caption" id="heartCaption">0 &ndash; 100, kept honest</p>
+
+    <div class="scale" id="meterBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Love percentage">
+      <div class="scale__ticks" aria-hidden="true"></div>
+      <div class="scale__fill" id="meterFill"></div>
+    </div>
+
+    <form class="form" id="loveForm" autocomplete="off" novalidate>
+      <div class="form__row">
+        <div class="field">
+          <label for="nameA">Your name</label>
+          <input id="nameA" name="nameA" type="text" maxlength="24" placeholder="Alex" autocapitalize="words" />
+        </div>
+        <span class="form__join" aria-hidden="true">&amp;</span>
+        <div class="field">
+          <label for="nameB">Their name</label>
+          <input id="nameB" name="nameB" type="text" maxlength="24" placeholder="Sam" autocapitalize="words" />
+        </div>
+      </div>
+      <p class="form__error" id="formError" role="alert" hidden></p>
+      <div class="form__foot">
+        <button class="btn btn--ink" type="submit" id="checkBtn">Read the meter</button>
+        <p class="form__hint">Same two names, same answer &mdash; every time.</p>
+      </div>
+    </form>
+
+    <div class="reading" id="result" aria-live="polite">
+      <p class="reading__pair" id="pairLabel"></p>
+      <p class="reading__msg" id="scoreMsg"></p>
+      <div class="reading__actions">
+        <button class="link" id="shareBtn" type="button">Copy the verdict</button>
+        <button class="link" id="retryBtn" type="button">Try two other names</button>
+      </div>
+      <div class="stamp" id="stamp" aria-hidden="true"><b>Certified</b><span>soulmates</span></div>
+    </div>
+  </section>
+
+  <!-- ================= 02 THE DAYS ================= -->
+  <section class="chapter wrap" id="days">
+    <header class="chapter__head reveal">
+      <span class="chapter__num">02</span>
+      <h2 class="chapter__title">The days</h2>
+      <span class="chapter__rule"></span>
+      <span class="chapter__meta">a running total</span>
+    </header>
+
+    <div class="ledger-wrap reveal">
+      <div class="field field--narrow">
+        <label for="startDate">The day it started</label>
+        <input id="startDate" type="date" />
+      </div>
+
+      <div class="ledger" id="clock" hidden>
+        <ul>
+          <li><span class="ledger__k">Days</span><i class="ledger__dots"></i><b class="tnum" id="dDays">0</b></li>
+          <li><span class="ledger__k">Hours</span><i class="ledger__dots"></i><b class="tnum" id="dHours">0</b></li>
+          <li><span class="ledger__k">Minutes</span><i class="ledger__dots"></i><b class="tnum" id="dMins">0</b></li>
+          <li><span class="ledger__k">Seconds</span><i class="ledger__dots"></i><b class="tnum" id="dSecs">0</b></li>
+        </ul>
+        <p class="ledger__foot" id="nextAnniv" hidden></p>
+      </div>
+      <p class="muted" id="ledgerEmpty">Pick a date and the totals start counting.</p>
+    </div>
+  </section>
+
+  <!-- ================= 03 THE LETTER ================= -->
+  <section class="chapter wrap" id="letter">
+    <header class="chapter__head reveal">
+      <span class="chapter__num">03</span>
+      <h2 class="chapter__title">The letter</h2>
+      <span class="chapter__rule"></span>
+      <span class="chapter__meta">write it, then really send it</span>
+    </header>
+
+    <div class="press reveal">
+      <div class="press__controls">
+        <div class="form__row form__row--tight">
+          <div class="field">
+            <label for="fromName">From</label>
+            <input id="fromName" type="text" maxlength="24" placeholder="Your name" autocapitalize="words" />
+          </div>
+          <div class="field">
+            <label for="toName">To</label>
+            <input id="toName" type="text" maxlength="24" placeholder="Their name" autocapitalize="words" />
+          </div>
+        </div>
+        <div class="tabs" id="toneChips" role="tablist" aria-label="Tone of the letter">
+          <button class="tab" role="tab" aria-selected="true"  data-tone="sweet" type="button">Sweet</button>
+          <button class="tab" role="tab" aria-selected="false" data-tone="deep"  type="button">Deep</button>
+          <button class="tab" role="tab" aria-selected="false" data-tone="funny" type="button">Playful</button>
+          <button class="tab" role="tab" aria-selected="false" data-tone="sorry" type="button">Sorry</button>
+        </div>
+      </div>
+
+      <article class="postcard">
+        <div class="postcard__stamp" aria-hidden="true">
+          <span>love</span><b>&#9829;</b><span>post</span>
+        </div>
+        <div class="postcard__rule" aria-hidden="true"><span>written by hand &middot; posted from here</span></div>
+        <p class="letter" id="letterOut"></p>
+        <div class="postcard__actions">
+          <button class="link" id="copyLetter" type="button">Copy</button>
+          <button class="link" id="downloadLetter" type="button">Download .txt</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= 04 THE PRINTS ================= -->
+  <section class="chapter wrap" id="prints">
+    <header class="chapter__head reveal">
+      <span class="chapter__num">04</span>
+      <h2 class="chapter__title">The prints</h2>
+      <span class="chapter__rule"></span>
+      <span class="chapter__meta">kept on this device only</span>
+    </header>
+
+    <div class="reveal">
+      <label class="addprint">
+        <input type="file" id="photoInput" accept="image/*" multiple hidden />
+        <span class="addprint__plus" aria-hidden="true">+</span>
+        <span class="addprint__txt">Add a print<br /><small>photos never leave this browser</small></span>
+      </label>
+
+      <div class="prints" id="galleryGrid"></div>
+      <div class="empty" id="galleryEmpty">
+        <p class="empty__title">The sheet is blank</p>
+        <p class="empty__txt">Add a few prints and pin them here with a caption.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 05 KEEPSAKES ================= -->
+  <section class="chapter wrap" id="keepsakes">
+    <header class="chapter__head reveal">
+      <span class="chapter__num">05</span>
+      <h2 class="chapter__title">Keepsakes</h2>
+      <span class="chapter__rule"></span>
+      <span class="chapter__meta">promises and fortunes</span>
+    </header>
+
+    <div class="keepsakes">
+      <div class="reveal">
+        <h3 class="sub">Promises to redeem</h3>
+        <p class="muted">Tap a ticket when you mean to cash it in.</p>
+        <div class="tickets" id="coupons"></div>
+      </div>
+
+      <aside class="reveal">
+        <h3 class="sub">The fortune bowl</h3>
+        <p class="muted">For the days you need a small kindness.</p>
+        <div class="fortune">
+          <p class="fortune__slip" id="jarNote">Draw a slip.</p>
+          <button class="btn btn--outline" id="jarBtn" type="button">Draw a fortune</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__inner">
+    <div class="foot__mark">
+      <p class="foot__title">Love Meter</p>
+      <p class="foot__note">Set in Fraunces &amp; Instrument Sans. Heart and letters drawn by hand, in code.</p>
+    </div>
+    <div class="foot__cols">
+      <div>
+        <p class="foot__head">Your data</p>
+        <p>Names, dates and photos live only in this browser's local storage. Nothing is sent anywhere.</p>
+      </div>
+      <div>
+        <p class="foot__head">Fair warning</p>
+        <p>A number cannot hold a person. Go tell them you love them in words instead.</p>
+      </div>
+    </div>
+  </div>
+  <p class="foot__legal">Made for two people, and for fun.</p>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<audio id="cupid" src="assets/cupid-loop.wav" loop preload="metadata"></audio>
+<script src="app.js"></script>
+</body>
+</html>

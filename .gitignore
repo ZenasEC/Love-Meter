@@ -1,0 +1,12 @@
+# Commercial / user-supplied music — not licensed for redistribution.
+# The committed track is assets/cupid-loop.wav (generated, royalty-free).
+assets/*.mp3
+assets/*.m4a
+assets/*.flac
+assets/*.ogg
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
