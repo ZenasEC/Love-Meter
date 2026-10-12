@@ -25,7 +25,20 @@
   --accent-deep: #8a2240;
   --rose:        #c8395c;
   --rose-soft:   #e88ba0;
-  --accent-wash: rgba(200, 57, 92, .075);
+  --accent-rgb:  200, 57, 92;
+  --accent-wash: rgba(var(--accent-rgb), .075);
+
+  /* the heart's light + a few printed details — kept as tokens so the legend
+     theme below can re-map them all in one place instead of per rule */
+  --glow-hi:      255, 214, 226;
+  --glow-lo:      232, 139, 160;
+  --heart-1:      #f28fa5;
+  --heart-2:      #c8395c;
+  --heart-3:      #8a2240;
+  --value-ink:    #fdf6f2;
+  --value-shadow: rgba(120, 20, 45, .35);
+  --tape:         rgba(216, 202, 172, .6);
+  --shadow:       rgba(42, 31, 34, .06);
 
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-text:    "Instrument Sans", system-ui, -apple-system, sans-serif;
@@ -73,7 +86,7 @@ body.is-locked { overflow: hidden; }
   transform: translate(-50%, -50%);
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(closest-side, rgba(200, 57, 92, .16), rgba(200, 57, 92, 0) 72%);
+  background: radial-gradient(closest-side, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), 0) 72%);
 }
 
 /* ---------- layers ---------- */
@@ -295,7 +308,7 @@ p { text-wrap: pretty; }
   inset: -16%;
   border-radius: 50%;
   z-index: 0;
-  background: radial-gradient(closest-side, rgba(200, 57, 92, .34), rgba(200, 57, 92, 0) 70%);
+  background: radial-gradient(closest-side, rgba(var(--accent-rgb), .34), rgba(var(--accent-rgb), 0) 70%);
   filter: blur(8px);
   opacity: calc(.4 + var(--heat) * .5);
   transition: opacity .9s ease;
@@ -306,7 +319,7 @@ p { text-wrap: pretty; }
   inset: -6%;
   border-radius: 50%;
   z-index: 0;
-  background: radial-gradient(closest-side, rgba(255, 214, 226, .6), rgba(232, 139, 160, 0) 70%);
+  background: radial-gradient(closest-side, rgba(var(--glow-hi), .6), rgba(var(--glow-lo), 0) 70%);
   filter: blur(16px);
   opacity: 0;
   pointer-events: none;
@@ -344,6 +357,11 @@ p { text-wrap: pretty; }
   transform-origin: 50% 62%;
   transition: transform 1s cubic-bezier(.22,.85,.2,1);
 }
+/* #heartFill is defined once in the hidden svgdefs; its stops are themed here
+   by token so the legend can turn the heart violet without a second gradient */
+#heartFill stop:nth-of-type(1) { stop-color: var(--heart-1); }
+#heartFill stop:nth-of-type(2) { stop-color: var(--heart-2); }
+#heartFill stop:nth-of-type(3) { stop-color: var(--heart-3); }
 .shard {
   fill: url(#heartFill);
   opacity: 0;
@@ -364,8 +382,8 @@ p { text-wrap: pretty; }
   font-size: clamp(2.3rem, 9vw, 4.2rem);
   line-height: 1;
   letter-spacing: -.04em;
-  color: #fdf6f2;
-  text-shadow: 0 2px 14px rgba(120, 20, 45, .35);
+  color: var(--value-ink);
+  text-shadow: 0 2px 14px var(--value-shadow);
   opacity: 0;
   transition: opacity .5s ease .25s;
   pointer-events: none;
@@ -526,7 +544,7 @@ p { text-wrap: pretty; }
   background: var(--card);
   border: 1px solid var(--rule-solid);
   padding: clamp(1.5rem, 4vw, 3rem);
-  box-shadow: 9px 11px 0 rgba(42, 31, 34, .06);
+  box-shadow: 9px 11px 0 var(--shadow);
 }
 .postcard__stamp {
   position: absolute; top: 1.2rem; right: 1.2rem;
@@ -535,7 +553,7 @@ p { text-wrap: pretty; }
   display: grid; place-content: center; gap: .1rem;
   font-family: var(--font-mono); font-size: .5rem; letter-spacing: .18em;
   text-transform: uppercase; color: var(--ink-faint);
-  background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(200,57,92,.07) 3px 4px);
+  background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(var(--accent-rgb), .07) 3px 4px);
 }
 .postcard__stamp b { font-size: 1.1rem; color: var(--accent); line-height: 1; letter-spacing: normal; }
 .postcard__rule {
@@ -550,7 +568,7 @@ p { text-wrap: pretty; }
   color: var(--ink);
   margin: 0; min-height: 15rem; white-space: pre-wrap;
   background:
-    repeating-linear-gradient(transparent 0 calc(1.85em - 1px), rgba(200,57,92,.13) calc(1.85em - 1px) 1.85em);
+    repeating-linear-gradient(transparent 0 calc(1.85em - 1px), rgba(var(--accent-rgb), .13) calc(1.85em - 1px) 1.85em);
   background-position: 0 .62em;
 }
 .letter.is-typing::after {
@@ -580,7 +598,7 @@ p { text-wrap: pretty; }
   background: var(--card);
   border: 1px solid var(--rule-solid);
   padding: .55rem .55rem 2.1rem;
-  box-shadow: 6px 7px 0 rgba(42, 31, 34, .07);
+  box-shadow: 6px 7px 0 var(--shadow);
   transition: transform .35s cubic-bezier(.2,.8,.2,1);
 }
 .print:nth-child(2n) { transform: rotate(-1.4deg); }
@@ -589,7 +607,7 @@ p { text-wrap: pretty; }
 .print::before {
   content: ""; position: absolute; top: -9px; left: 50%;
   width: 62px; height: 16px; transform: translateX(-50%) rotate(-2.5deg);
-  background: rgba(216, 202, 172, .6);
+  background: var(--tape);
   border-left: 1px dashed rgba(255, 253, 247, .8);
   border-right: 1px dashed rgba(255, 253, 247, .8);
 }
@@ -649,7 +667,7 @@ p { text-wrap: pretty; }
 }
 .ticket.is-open .ticket__redeemed { opacity: 1; }
 
-.fortune { margin-top: 1.6rem; border: 1px solid var(--rule-solid); background: var(--card); padding: 1.6rem; box-shadow: 6px 7px 0 rgba(42,31,34,.06); }
+.fortune { margin-top: 1.6rem; border: 1px solid var(--rule-solid); background: var(--card); padding: 1.6rem; box-shadow: 6px 7px 0 var(--shadow); }
 .fortune__slip { font-family: var(--font-hand); font-size: 1.35rem; line-height: 1.5; color: var(--ink); margin: 0 0 1.4rem; min-height: 5.5rem; }
 .fortune__slip.pop { animation: slipIn .45s cubic-bezier(.2,.9,.3,1.1); }
 
@@ -735,6 +753,50 @@ p { text-wrap: pretty; }
   60%  { opacity: 1; transform: scale(.94) rotate(-7deg); }
   100% { opacity: 1; transform: scale(1) rotate(-8deg); }
 }
+
+/* ==========================================================================
+   The legend — 90% and above
+   A rare state, not decoration. At LEGEND_AT (90) the reading re-maps every
+   token to a single violet family, the heart's light and its spark colours
+   included, and a ring of flame (drawn on #drift by FLAME in app.js) burns
+   around the heart. It stays lit until the next reading.
+   ========================================================================== */
+:root.is-legend {
+  /* violet paper — still one family, now lit from underneath */
+  --paper:      #241a38;
+  --paper-hi:   #2f2350;
+  --paper-lo:   #170e24;
+  --card:       #2b1f47;
+
+  --ink:        #f3edff;
+  --ink-soft:   #c9bce6;
+  --ink-faint:  #ab9dd0;
+  --rule:       rgba(196, 176, 255, .20);
+  --rule-solid: #4b3a72;
+
+  --accent:      #b57cff;
+  --accent-deep: #8a4fe0;
+  --rose:        #c39bff;
+  --rose-soft:   #e6d4ff;
+  --accent-rgb:  168, 118, 255;
+  --accent-wash: rgba(var(--accent-rgb), .12);
+
+  --glow-hi:      238, 216, 255;
+  --glow-lo:      168, 108, 255;
+  --heart-1:      #cfa8ff;
+  --heart-2:      #9a5cff;
+  --heart-3:      #5a2fa6;
+  --value-ink:    #fbf6ff;
+  --value-shadow: rgba(46, 10, 92, .55);
+  --tape:         rgba(150, 126, 210, .45);
+  --shadow:       rgba(0, 0, 0, .38);
+}
+/* body pins color-scheme: light, so the legend has to reset it there */
+:root.is-legend body { color-scheme: dark; }
+/* the grain was a printed multiply; on violet it becomes lit dust */
+:root.is-legend .grain { mix-blend-mode: soft-light; opacity: .32; }
+/* the meter's fill multiplied into paper — on violet it should read, not sink */
+:root.is-legend .scale__fill { mix-blend-mode: normal; }
 
 /* ==========================================================================
    Responsive

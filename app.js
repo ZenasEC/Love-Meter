@@ -3,6 +3,7 @@
    1 utils        2 love score     3 drifting hearts  4 cursor dot
    5 music        6 cover          7 the heart        8 ledger
    9 letter      10 prints        11 tickets + fortune 12 reveal + spy
+  13 legend      14 logbook
    ========================================================================== */
 (() => {
   "use strict";
@@ -113,6 +114,15 @@
     c.bezierCurveTo(s * 0.64, -s * 0.92, s * 1.15, s * 0.06, 0, s * 0.92);
     c.closePath();
   }
+  /* Two tints of the current accent. The legend swaps which pair these name,
+     so the drifting hearts turn violet along with the rest of the page. */
+  const PAL = {
+    rose: "200, 57, 92", roseDeep: "176, 42, 76",
+    legend: "168, 118, 255", legendDeep: "124, 74, 214",
+  };
+  const driftTint = (t) =>
+    (legendOn ? (t ? PAL.legendDeep : PAL.legend) : (t ? PAL.roseDeep : PAL.rose));
+
   function newHeart(anywhere) {
     return {
       x: Math.random() * W,
@@ -122,12 +132,12 @@
       sway: Math.random() * Math.PI * 2,
       alpha: 0.06 + Math.random() * 0.08,
       rot: (Math.random() - 0.5) * 0.5,
-      col: Math.random() < 0.75 ? "200, 57, 92" : "176, 42, 76",
+      tint: Math.random() < 0.25 ? 1 : 0,
     };
   }
   for (let i = 0; i < 11; i++) drift.push(newHeart(true));
 
-  function spraySpecks(x, y, n, rgb = "200, 57, 92") {
+  function spraySpecks(x, y, n, rgb = PAL.rose) {
     for (let i = 0; i < n; i++) {
       const ang = Math.random() * Math.PI * 2;
       const sp = (1.5 + Math.random() * 6) * DPR;
@@ -144,7 +154,7 @@
   function loop(now) {
     ctx.clearRect(0, 0, W, H);
 
-    if (booted) beatFrame(now);
+    if (booted) { beatFrame(now); FLAME.draw(now); }
 
     if (!REDUCED && drift.length < 18 && Math.random() < 0.022) drift.push(newHeart(false));
     if (REDUCED && drift.length > 4) drift.length = 4;
@@ -159,7 +169,7 @@
       ctx.translate(h.x, h.y);
       ctx.rotate(h.rot + Math.sin(h.sway) * 0.07);
       ctx.globalAlpha = h.alpha;
-      ctx.strokeStyle = `rgb(${h.col})`;
+      ctx.strokeStyle = `rgb(${driftTint(h.tint)})`;
       heartPath(ctx, h.s);
       ctx.stroke();
       ctx.restore();
@@ -463,6 +473,7 @@
 
   function resetHeart() {
     heartEl.classList.remove("is-read", "is-broken");
+    setLegend(false);
     meterBar.classList.remove("is-broken");
     armBeat(IDLE.period, IDLE.amp, IDLE.heat);
     heartSvg.style.transform = "";
@@ -479,11 +490,13 @@
     if (field) field.focus();
   }
 
-  function countUp(el, to, dur = 1900) {
+  function countUp(el, to, dur = 1900, onValue) {
     const t0 = performance.now();
     const tick = (now) => {
       const p = clamp((now - t0) / dur, 0, 1);
-      el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * to);
+      const v = Math.round((1 - Math.pow(1 - p, 3)) * to);
+      el.textContent = v;
+      if (onValue) onValue(v);
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -513,6 +526,9 @@
     meterBar.setAttribute("aria-valuenow", String(score));
     scoreNum.textContent = "0";
 
+    // a fresh reading starts back on warm paper; it can ignite again as it climbs
+    setLegend(false);
+
     // dial the heart in, then run the meter up to it
     setHeart(score);
 
@@ -522,7 +538,8 @@
     meterFill.style.transition = "";
     requestAnimationFrame(() => {
       meterFill.style.width = score + "%";
-      countUp(scoreNum, score);
+      // ignites the instant the number on screen reaches LEGEND_AT
+      countUp(scoreNum, score, 1900, (v) => { if (v >= LEGEND_AT) setLegend(true); });
     });
 
     stamp.classList.remove("show");
@@ -531,7 +548,7 @@
       setTimeout(() => stamp.classList.add("show"), 1000);
       setTimeout(() => {
         const r = heartEl.getBoundingClientRect();
-        spraySpecks(r.left + r.width / 2, r.top + r.height * 0.45, 80, "200, 57, 92");
+        spraySpecks(r.left + r.width / 2, r.top + r.height * 0.45, 80, PAL.rose);
       }, 1200);
     }
     if (score < BREAK_AT && !REDUCED) {
@@ -796,7 +813,150 @@
 
   if (nameA.value && !nameB.value) nameB.focus();
 
-  /* ---------------------------------------------------------- 13 logbook */
+  /* ------------------------------------------------------------ 13 legend */
+  /* 90% and above is the legend: the page re-maps every colour token to its
+     violet family (the `is-legend` class on <html>, defined in styles.css) and
+     a ring of flame burns around the heart. The colour switch is pure CSS; the
+     flame is drawn on the same background canvas as the drifting hearts, so it
+     needs no extra layer. It stays lit until the next reading — setLegend(false)
+     runs at the top of every submit and in resetHeart(). */
+  const LEGEND_AT = 90;
+  let legendOn = false;
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+  function setLegend(on) {
+    if (on === legendOn) return;
+    legendOn = on;
+    document.documentElement.classList.toggle("is-legend", on);
+    FLAME.setActive(on);
+    if (themeMeta) themeMeta.setAttribute("content", on ? "#241a38" : "#f8f1ea");
+    if (on && !REDUCED) { // the ignition: one violet burst off the heart
+      const r = heartEl.getBoundingClientRect();
+      spraySpecks(r.left + r.width / 2, r.top + r.height * .45, 64, PAL.legend);
+    }
+  }
+
+  /* A soft flame ring around the heart. Three radial-gradient blobs are
+     pre-rendered once and reused for every tongue/ember, so a full ring costs a
+     few hundred small drawImage calls a frame — and nothing at all when it is
+     not lit. The canvas is scaled to device pixels, so draw() sets its own
+     transform and works in CSS pixels. */
+  const FLAME = (() => {
+    function blob(rgb) {
+      const S = 64;
+      const c = document.createElement("canvas");
+      c.width = c.height = S;
+      const g = c.getContext("2d");
+      const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      grd.addColorStop(0, `rgba(${rgb}, 1)`);
+      grd.addColorStop(.45, `rgba(${rgb}, .45)`);
+      grd.addColorStop(1, `rgba(${rgb}, 0)`);
+      g.fillStyle = grd;
+      g.fillRect(0, 0, S, S);
+      return c;
+    }
+    const sHot = blob("255, 246, 255");
+    const sMid = blob("198, 148, 255");
+    const sOut = blob("138, 79, 224");
+
+    const K = 16; // tongues around the heart
+    const tongues = [];
+    for (let i = 0; i < K; i++) {
+      tongues.push({
+        a: (i / K) * Math.PI * 2,
+        ph: Math.random() * Math.PI * 2,
+        sp: .75 + Math.random() * .8,
+        sz: .55 + Math.random() * .55,
+      });
+    }
+    const embers = [];
+    let active = false;
+
+    function draw(now) {
+      if (!active) return;
+      const rect = heartEl.getBoundingClientRect();
+      if (rect.bottom < -60 || rect.top > innerHeight + 60) return;
+
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height * .52;
+      const rx = rect.width * .45;
+      const ry = rect.height * .45;
+      const t = REDUCED ? 0 : now / 1000; // frozen shape when motion is off
+
+      ctx.save();
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.globalCompositeOperation = "lighter";
+
+      for (let i = 0; i < tongues.length; i++) {
+        const g = tongues[i];
+        const ca = Math.cos(g.a), sa = Math.sin(g.a);
+        const bx = cx + ca * rx, by = cy + sa * ry;
+        // outward from the heart, but buoyant — fire rises
+        let dx = ca * .6, dy = sa * .6 - .8;
+        const dl = Math.hypot(dx, dy) || 1;
+        dx /= dl; dy /= dl;
+        const sway = Math.sin(t * 1.7 + g.ph) * .22; // the lick wavers
+        const ddx = dx - sway * dy, ddy = dy + sway * dx;
+
+        const top = (1 - sa) / 2; // 1 at the crown, 0 underneath
+        const flick = .62 + .30 * Math.sin(t * 2.3 * g.sp + g.ph)
+                           + .10 * Math.sin(t * 6.1 + g.ph * 2.7);
+        const len = rect.width * (.20 + .28 * top) * g.sz * flick;
+
+        for (let k = 0; k < 4; k++) {
+          const f = k / 3;
+          const px = bx + ddx * len * f;
+          const py = by + ddy * len * f;
+          const rad = rect.width * (.085 + .15 * (1 - f)) * (.68 + .32 * top);
+          const a = (1 - f) * (.30 + .55 * top) * .9;
+          ctx.globalAlpha = a * .7;
+          ctx.drawImage(sOut, px - rad, py - rad, rad * 2, rad * 2);
+          ctx.globalAlpha = a;
+          const r2 = rad * .6;
+          ctx.drawImage(sMid, px - r2, py - r2, r2 * 2, r2 * 2);
+          if (k === 0) { // a hot core only at the base of each tongue
+            ctx.globalAlpha = a * .9;
+            const r3 = rad * .34;
+            ctx.drawImage(sHot, px - r3, py - r3, r3 * 2, r3 * 2);
+          }
+        }
+      }
+
+      if (!REDUCED) { // embers drift up and out
+        if (embers.length < 90 && Math.random() < .55) {
+          const a = Math.random() * Math.PI * 2;
+          embers.push({
+            x: cx + Math.cos(a) * rx * (.85 + Math.random() * .35),
+            y: cy + Math.sin(a) * ry * (.85 + Math.random() * .35),
+            vx: (Math.random() - .5) * .5,
+            vy: -(.35 + Math.random() * 1.1),
+            r: 1.1 + Math.random() * 2.3,
+            life: 0, max: 46 + Math.random() * 70,
+          });
+        }
+        for (let i = embers.length - 1; i >= 0; i--) {
+          const e = embers[i];
+          e.life++;
+          e.vy -= .006; // buoyant
+          e.vx += (Math.random() - .5) * .05;
+          e.x += e.vx; e.y += e.vy;
+          const rad = e.r * 3;
+          ctx.globalAlpha = Math.max(0, 1 - e.life / e.max) * .85;
+          ctx.drawImage(sHot, e.x - rad, e.y - rad, rad * 2, rad * 2);
+          if (e.life >= e.max) embers.splice(i, 1);
+        }
+      }
+
+      ctx.restore();
+    }
+
+    return {
+      draw,
+      setActive(v) { active = v; if (!v) embers.length = 0; },
+    };
+  })();
+
+  /* ---------------------------------------------------------- 14 logbook */
   /* Optional guest log: each reading is POSTed to a Google Apps Script web
      app that appends a row to a private Sheet the host can read. Paste the
      deployed /exec URL below (see tools/log-sheet.gs); leave "" to keep the

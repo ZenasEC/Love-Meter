@@ -4,6 +4,8 @@ A little almanac of small affections. Write two names, read an honest number.
 
 The centre of the page is a big heart that beats as your score climbs — faster
 as it gets hotter, and it cracks and goes grey if the pair lands under 30%.
+At 90% and above the page turns violet and a ring of flame burns around the
+heart until the next reading.
 Two cupids keep it in their sights. Around it: a ledger of time spent together,
 a letter press, a shelf of prints, and a bowl of promises.
 
@@ -52,7 +54,7 @@ To see who your friends have tested, log every reading to a Google Sheet:
 1. Create a Sheet (<https://sheets.new>), then **Extensions ▸ Apps Script**.
 2. Paste in [`tools/log-sheet.gs`](tools/log-sheet.gs) and save.
 3. **Deploy ▸ New deployment ▸ Web app** — execute as *Me*, access *Anyone*.
-4. Copy the `/exec` URL into `LOG_ENDPOINT` in the `13 logbook` section of
+4. Copy the `/exec` URL into `LOG_ENDPOINT` in the `14 logbook` section of
    `app.js`, then commit and push.
 
 Each reading then lands as a row: when, the two names, and the score. A note
@@ -85,6 +87,8 @@ python tools/shrink_track.py "your-source.wav" assets/pastel-skies.wav
 
 ## Notes
 
+- Score 90% or more lights the legend: the whole page re-maps to violet and
+  a flame ring burns around the heart until another pair is read.
 - Photos never leave the browser: gallery images are downscaled and kept in
   `localStorage`.
 - Motion respects `prefers-reduced-motion`.
