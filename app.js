@@ -199,11 +199,11 @@
   }
 
   /* ------------------------------------------------------------- 5 music */
-  /* The shipped track is our own generated, royalty-free lofi love
-     instrumental (see tools/make_lofi_love.py). If it can't load we fall back
-     to the synthesized WebAudio waltz below, so the page always has its tune. */
+  /* The shipped track is "Pastel Skies" (assets/pastel-skies.wav). If it can't
+     load we fall back to the synthesized WebAudio waltz below, so the page
+     always has its tune. */
   const audio = $("#cupid");
-  // Primary: whatever the <audio> element points at (assets/lofi-love.wav).
+  // Primary: whatever the <audio> element points at (assets/pastel-skies.wav).
   // If that fails, the synthesized WebAudio waltz below takes over.
   const SOURCES = [audio.getAttribute("src")].filter(Boolean);
   let sourceIdx = 0;

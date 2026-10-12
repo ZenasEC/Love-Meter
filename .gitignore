@@ -1,5 +1,7 @@
-# Commercial / user-supplied music — not licensed for redistribution.
-# The committed tracks are generated and royalty-free (lofi-love.wav, cupid-loop.wav).
+# Commercial / third-party music — not licensed for redistribution.
+# The shipped track (assets/pastel-skies.wav) is a user-supplied cover, committed
+# on purpose; pastel-skies.wav is excluded from the ignores below.
+# lofi-love.wav and cupid-loop.wav are our own generated, royalty-free tracks.
 assets/*.mp3
 assets/*.m4a
 assets/*.flac
