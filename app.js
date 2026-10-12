@@ -505,6 +505,8 @@
     const score = loveScore(a, b);
     const tier = tierFor(score);
 
+    logReading(a, b, score);
+
     pairLabel.textContent = `${a} & ${b}`;
     scoreMsg.textContent = tier.msg;
     heartCaption.textContent = tier.key;
@@ -793,6 +795,35 @@
   }
 
   if (nameA.value && !nameB.value) nameB.focus();
+
+  /* ---------------------------------------------------------- 13 logbook */
+  /* Optional guest log: each reading is POSTed to a Google Apps Script web
+     app that appends a row to a private Sheet the host can read. Paste the
+     deployed /exec URL below (see tools/log-sheet.gs); leave "" to keep the
+     page fully offline. Logging is best-effort and never blocks the meter. */
+  const LOG_ENDPOINT = "";
+
+  function logReading(a, b, score) {
+    if (!LOG_ENDPOINT) return;
+    try {
+      fetch(LOG_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors", // Apps Script needs a "simple" request; reply is opaque
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ a, b, score }),
+        keepalive: true,
+      }).catch(() => { /* offline / blocked — ignore */ });
+    } catch { /* a log must never break the meter */ }
+  }
+
+  // Only claim that readings are logged once an endpoint is actually wired in.
+  if (LOG_ENDPOINT) {
+    const formNote = $("#formNote");
+    const dataNote = $("#dataNote");
+    if (formNote) formNote.hidden = false;
+    if (dataNote) dataNote.textContent =
+      "Names, dates and photos live only in this browser's local storage. The two names you read are also saved to a private sheet so the host can see who has been tested.";
+  }
 
   booted = true;
 })();

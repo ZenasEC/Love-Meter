@@ -37,6 +37,23 @@ hash entirely.
 | `app.js` | One IIFE, split into numbered sections. |
 | `assets/cupid-loop.wav` | The music: an original music-box waltz. |
 | `tools/make_cupid_loop.py` | Generates that waltz from scratch (pure stdlib). |
+| `tools/log-sheet.gs` | Optional: Apps Script that logs each reading to a Google Sheet. |
+
+## The guest log (optional)
+
+Off by default — the page sends nothing anywhere until you turn it on.
+
+To see who your friends have tested, log every reading to a Google Sheet:
+
+1. Create a Sheet (<https://sheets.new>), then **Extensions ▸ Apps Script**.
+2. Paste in [`tools/log-sheet.gs`](tools/log-sheet.gs) and save.
+3. **Deploy ▸ New deployment ▸ Web app** — execute as *Me*, access *Anyone*.
+4. Copy the `/exec` URL into `LOG_ENDPOINT` in the `13 logbook` section of
+   `app.js`, then commit and push.
+
+Each reading then lands as a row: when, the two names, and the score. A note
+under the form appears once logging is on, so visitors can see their names are
+saved.
 
 ## Music
 

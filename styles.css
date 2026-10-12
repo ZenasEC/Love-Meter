@@ -481,6 +481,7 @@ p { text-wrap: pretty; }
 .form__error { margin: 1.2rem 0 0; color: var(--accent); font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em; }
 .form__foot { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem; }
 .form__hint { font-family: var(--font-mono); font-size: .64rem; letter-spacing: .1em; color: var(--ink-faint); margin: 0; }
+.form__note { margin: 1rem 0 0; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .08em; color: var(--ink-faint); }
 
 /* ==========================================================================
    Chapters

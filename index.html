@@ -196,6 +196,8 @@
       </div>
     </form>
 
+    <p class="form__note" id="formNote" hidden>Readings are saved to a private log so the host can see who has been tested.</p>
+
     <div class="reading" id="result" aria-live="polite">
       <p class="reading__pair" id="pairLabel"></p>
       <p class="reading__msg" id="scoreMsg"></p>
@@ -339,7 +341,7 @@
     <div class="foot__cols">
       <div>
         <p class="foot__head">Your data</p>
-        <p>Names, dates and photos live only in this browser's local storage. Nothing is sent anywhere.</p>
+        <p id="dataNote">Names, dates and photos live only in this browser's local storage. Nothing is sent anywhere.</p>
       </div>
       <div>
         <p class="foot__head">Fair warning</p>
