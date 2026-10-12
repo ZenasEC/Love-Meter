@@ -1,5 +1,5 @@
 # Commercial / user-supplied music — not licensed for redistribution.
-# The committed track is assets/cupid-loop.wav (generated, royalty-free).
+# The committed tracks are generated and royalty-free (lofi-love.wav, cupid-loop.wav).
 assets/*.mp3
 assets/*.m4a
 assets/*.flac

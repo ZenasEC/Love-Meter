@@ -199,11 +199,11 @@
   }
 
   /* ------------------------------------------------------------- 5 music */
-  /* The one shipped track is our own generated, royalty-free music-box waltz
-     (see tools/make_cupid_loop.py). If it can't load we fall back to the
-     synthesized WebAudio waltz below, so the page always has its tune. */
+  /* The shipped track is our own generated, royalty-free lofi love
+     instrumental (see tools/make_lofi_love.py). If it can't load we fall back
+     to the synthesized WebAudio waltz below, so the page always has its tune. */
   const audio = $("#cupid");
-  // Primary: whatever the <audio> element points at (assets/cupid-loop.wav).
+  // Primary: whatever the <audio> element points at (assets/lofi-love.wav).
   // If that fails, the synthesized WebAudio waltz below takes over.
   const SOURCES = [audio.getAttribute("src")].filter(Boolean);
   let sourceIdx = 0;
@@ -223,7 +223,7 @@
 
   function setSoundUI(on) {
     soundBtn.setAttribute("aria-pressed", String(on));
-    soundBtn.textContent = on ? "waltz — on" : "waltz — off";
+    soundBtn.textContent = on ? "music — on" : "music — off";
   }
   function useFallback() {
     usingFallback = true;
