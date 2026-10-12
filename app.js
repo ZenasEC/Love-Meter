@@ -801,7 +801,7 @@
      app that appends a row to a private Sheet the host can read. Paste the
      deployed /exec URL below (see tools/log-sheet.gs); leave "" to keep the
      page fully offline. Logging is best-effort and never blocks the meter. */
-  const LOG_ENDPOINT = "";
+  const LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbzo-R7ubW-lY9jXzbX4cGCSorvkmgSI50o4x9k54rLLGQaTXI_1Q8AWZNwYzFsFTZf1/exec";
 
   function logReading(a, b, score) {
     if (!LOG_ENDPOINT) return;
