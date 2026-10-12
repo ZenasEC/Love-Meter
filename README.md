@@ -87,8 +87,9 @@ python tools/shrink_track.py "your-source.wav" assets/pastel-skies.wav
 
 ## Notes
 
-- Score 90% or more lights the legend: the whole page re-maps to violet and
-  a flame ring burns around the heart until another pair is read.
+- Score 90% or more lights the legend: the whole page crossfades to violet
+  over one slow breath and tall flame streaks with white-hot cores burn
+  upward around the heart until another pair is read.
 - Photos never leave the browser: gallery images are downscaled and kept in
   `localStorage`.
 - Motion respects `prefers-reduced-motion`.

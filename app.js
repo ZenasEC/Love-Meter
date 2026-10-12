@@ -814,10 +814,11 @@
   if (nameA.value && !nameB.value) nameB.focus();
 
   /* ------------------------------------------------------------ 13 legend */
-  /* 90% and above is the legend: the page re-maps every colour token to its
-     violet family (the `is-legend` class on <html>, defined in styles.css) and
-     a ring of flame burns around the heart. The colour switch is pure CSS; the
-     flame is drawn on the same background canvas as the drifting hearts, so it
+  /* 90% and above is the legend: the page crossfades every colour token to its
+     violet family (the `is-legend` class on <html>, eased over 1.6s by the
+     registered-property transition in styles.css) and a ring of rising flame
+     streaks burns around the heart. The colour switch is pure CSS; the flame
+     is drawn on the same background canvas as the drifting hearts, so it
      needs no extra layer. It stays lit until the next reading — setLegend(false)
      runs at the top of every submit and in resetHeart(). */
   const LEGEND_AT = 90;
@@ -836,12 +837,38 @@
     }
   }
 
-  /* A soft flame ring around the heart. Three radial-gradient blobs are
-     pre-rendered once and reused for every tongue/ember, so a full ring costs a
-     few hundred small drawImage calls a frame — and nothing at all when it is
-     not lit. The canvas is scaled to device pixels, so draw() sets its own
-     transform and works in CSS pixels. */
+  /* Real rising flame: tall tapered streaks with near-white cores that lick
+     upward off the heart, thin trails tearing off the ring and shooting up,
+     and embers drifting behind them. Every sprite is pre-rendered once and
+     stretched along its tongue, so a full burn is a few hundred small
+     drawImage calls a frame — and nothing at all when it is not lit. Ignition
+     breathes in over about a second (the litAt envelope); under REDUCED the
+     ring is one frozen shape with no trails or embers. The canvas is scaled
+     to device pixels, so draw() sets its own transform and works in CSS px. */
   const FLAME = (() => {
+    /* A vertical streak: bright at the base, gone at the tip, tapered sides.
+       Stretched along each tongue it reads as a flame lick; the round blob
+       below is only the bed of fire-light the tongues stand in. */
+    function streak(rgb) {
+      const W = 48, H = 160;
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      const g = c.getContext("2d");
+      const v = g.createLinearGradient(0, H, 0, 0);
+      v.addColorStop(0, `rgba(${rgb}, 1)`);
+      v.addColorStop(.45, `rgba(${rgb}, .5)`);
+      v.addColorStop(1, `rgba(${rgb}, 0)`);
+      g.fillStyle = v;
+      g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = "destination-in";
+      const h = g.createLinearGradient(0, 0, W, 0);
+      h.addColorStop(0, "rgba(0, 0, 0, 0)");
+      h.addColorStop(.5, "rgba(0, 0, 0, 1)");
+      h.addColorStop(1, "rgba(0, 0, 0, 0)");
+      g.fillStyle = h;
+      g.fillRect(0, 0, W, H);
+      return c;
+    }
     function blob(rgb) {
       const S = 64;
       const c = document.createElement("canvas");
@@ -855,22 +882,26 @@
       g.fillRect(0, 0, S, S);
       return c;
     }
-    const sHot = blob("255, 246, 255");
-    const sMid = blob("198, 148, 255");
-    const sOut = blob("138, 79, 224");
+    const sCore = streak("246, 238, 255");
+    const sMid = streak("190, 132, 255");
+    const sOut = streak("128, 70, 220");
+    const sBed = blob("150, 90, 235");
+    const sSpark = blob("240, 228, 255");
 
-    const K = 16; // tongues around the heart
+    const K = 18; // tongues around the heart
     const tongues = [];
     for (let i = 0; i < K; i++) {
       tongues.push({
         a: (i / K) * Math.PI * 2,
         ph: Math.random() * Math.PI * 2,
-        sp: .75 + Math.random() * .8,
-        sz: .55 + Math.random() * .55,
+        sp: .8 + Math.random() * .9,
+        sz: .6 + Math.random() * .55,
       });
     }
+    const trails = []; // thin streaks tearing upward off the ring
     const embers = [];
     let active = false;
+    let litAt = 0;
 
     function draw(now) {
       if (!active) return;
@@ -882,48 +913,76 @@
       const rx = rect.width * .45;
       const ry = rect.height * .45;
       const t = REDUCED ? 0 : now / 1000; // frozen shape when motion is off
+      // ignition breathes in over about a second, eased
+      const raw = REDUCED ? 1 : Math.min(1, Math.max(0, (now - litAt) / 1100));
+      const env = raw * raw * (3 - 2 * raw);
+      if (env <= 0) return;
+      // one slow gust breathes through the whole ring
+      const gust = .82 + .18 * Math.sin(t * 1.4) * Math.sin(t * .63 + 1.7);
 
       ctx.save();
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.globalCompositeOperation = "lighter";
 
+      // the bed of fire-light the tongues stand in, pulsing with the gust
+      ctx.globalAlpha = .30 * env * gust;
+      ctx.drawImage(sBed, cx - rx * 1.5, cy - ry * 1.5, rx * 3, ry * 3);
+
       for (let i = 0; i < tongues.length; i++) {
         const g = tongues[i];
         const ca = Math.cos(g.a), sa = Math.sin(g.a);
-        const bx = cx + ca * rx, by = cy + sa * ry;
-        // outward from the heart, but buoyant — fire rises
-        let dx = ca * .6, dy = sa * .6 - .8;
-        const dl = Math.hypot(dx, dy) || 1;
-        dx /= dl; dy /= dl;
-        const sway = Math.sin(t * 1.7 + g.ph) * .22; // the lick wavers
-        const ddx = dx - sway * dy, ddy = dy + sway * dx;
-
+        const bx = cx + ca * rx * .94, by = cy + sa * ry * .94;
         const top = (1 - sa) / 2; // 1 at the crown, 0 underneath
-        const flick = .62 + .30 * Math.sin(t * 2.3 * g.sp + g.ph)
-                           + .10 * Math.sin(t * 6.1 + g.ph * 2.7);
-        const len = rect.width * (.20 + .28 * top) * g.sz * flick;
+        // flames lean out from the heart but always climb; the lick wavers
+        const lean = ca * .5 + Math.sin(t * 2.1 + g.ph) * .16;
+        const flick = Math.max(.15, .62 + .28 * Math.sin(t * 3.1 * g.sp + g.ph)
+                                     + .12 * Math.sin(t * 7.3 + g.ph * 2.7));
+        const L = rect.width * (.34 + .52 * top) * g.sz * flick * gust;
+        const presence = env * (.30 + .70 * top); // the underside smoulders
+        const wTop = .72 + .28 * top;
+        const wU = rect.width * .11 * wTop; // violet body, full length
+        const wM = rect.width * .064 * wTop; // hot mid, four-fifths up
+        const wC = rect.width * .032 * wTop; // near-white core, three-fifths
 
-        for (let k = 0; k < 4; k++) {
-          const f = k / 3;
-          const px = bx + ddx * len * f;
-          const py = by + ddy * len * f;
-          const rad = rect.width * (.085 + .15 * (1 - f)) * (.68 + .32 * top);
-          const a = (1 - f) * (.30 + .55 * top) * .9;
-          ctx.globalAlpha = a * .7;
-          ctx.drawImage(sOut, px - rad, py - rad, rad * 2, rad * 2);
-          ctx.globalAlpha = a;
-          const r2 = rad * .6;
-          ctx.drawImage(sMid, px - r2, py - r2, r2 * 2, r2 * 2);
-          if (k === 0) { // a hot core only at the base of each tongue
-            ctx.globalAlpha = a * .9;
-            const r3 = rad * .34;
-            ctx.drawImage(sHot, px - r3, py - r3, r3 * 2, r3 * 2);
-          }
-        }
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(lean);
+        ctx.globalAlpha = presence * .55;
+        ctx.drawImage(sOut, -wU / 2, -L, wU, L);
+        ctx.globalAlpha = presence * .8;
+        ctx.drawImage(sMid, -wM / 2, -L * .8, wM, L * .8);
+        ctx.globalAlpha = presence;
+        ctx.drawImage(sCore, -wC / 2, -L * .62, wC, L * .62);
+        ctx.restore();
       }
 
-      if (!REDUCED) { // embers drift up and out
-        if (embers.length < 90 && Math.random() < .55) {
+      if (!REDUCED) {
+        // thin trails tear off the ring and shoot upward
+        if (trails.length < 46 && Math.random() < .8) {
+          const a = Math.random() * Math.PI * 2;
+          trails.push({
+            x: cx + Math.cos(a) * rx * (.9 + Math.random() * .3),
+            y: cy + Math.sin(a) * ry * (.9 + Math.random() * .3) - Math.random() * ry * .5,
+            vx: (Math.random() - .5) * .6,
+            vy: -(2.2 + Math.random() * 3.2),
+            w: 5 + Math.random() * 6,
+            len: 22 + Math.random() * 46,
+            life: 0, max: 26 + Math.random() * 30,
+            ph: Math.random() * Math.PI * 2,
+          });
+        }
+        for (let i = trails.length - 1; i >= 0; i--) {
+          const s = trails[i];
+          s.life++;
+          s.x += s.vx + Math.sin(t * 9 + s.ph) * .5;
+          s.y += s.vy;
+          s.vy *= .985;
+          ctx.globalAlpha = Math.max(0, 1 - s.life / s.max) * .8 * env;
+          ctx.drawImage(sCore, s.x - s.w / 2, s.y - s.len, s.w, s.len);
+          if (s.life >= s.max) trails.splice(i, 1);
+        }
+        // embers drift up and out behind the trails
+        if (embers.length < 70 && Math.random() < .5) {
           const a = Math.random() * Math.PI * 2;
           embers.push({
             x: cx + Math.cos(a) * rx * (.85 + Math.random() * .35),
@@ -941,8 +1000,8 @@
           e.vx += (Math.random() - .5) * .05;
           e.x += e.vx; e.y += e.vy;
           const rad = e.r * 3;
-          ctx.globalAlpha = Math.max(0, 1 - e.life / e.max) * .85;
-          ctx.drawImage(sHot, e.x - rad, e.y - rad, rad * 2, rad * 2);
+          ctx.globalAlpha = Math.max(0, 1 - e.life / e.max) * .85 * env;
+          ctx.drawImage(sSpark, e.x - rad, e.y - rad, rad * 2, rad * 2);
           if (e.life >= e.max) embers.splice(i, 1);
         }
       }
@@ -952,7 +1011,11 @@
 
     return {
       draw,
-      setActive(v) { active = v; if (!v) embers.length = 0; },
+      setActive(v) {
+        active = v;
+        if (v) litAt = performance.now();
+        else { trails.length = 0; embers.length = 0; }
+      },
     };
   })();
 
