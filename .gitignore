@@ -7,6 +7,9 @@ assets/*.m4a
 assets/*.flac
 assets/*.ogg
 
+# Contributor notes — internal, kept local only.
+AGENTS.md
+
 # OS / editor junk
 .DS_Store
 Thumbs.db
